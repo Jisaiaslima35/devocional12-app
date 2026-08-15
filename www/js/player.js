@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  var STREAM = '/stream';  // AzuraCast self-hosted (migrado do Zeno.fm 06/08/2026)
+  var STREAM = 'https://devocional12.automacaojs.us/stream';  // AzuraCast self-hosted via proxy (migrado do Zeno.fm 06/08/2026). URL absoluta pra funcionar tanto em PWA quanto em APK local (localhost).
 
   /* =======================================================
      0) MEDIASESSION — notificação nativa + foreground service (background audio)
