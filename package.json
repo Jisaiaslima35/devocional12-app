@@ -1,0 +1,14 @@
+{
+  "name": "devocional12-pwa",
+  "version": "1.0.0",
+  "description": "Devocional 12 — PWA + APK (Rádio gospel 24h com locutor IA)",
+  "private": true,
+  "scripts": {
+    "build:apk": "cap sync android && cd android && ./gradlew assembleDebug --no-daemon"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0"
+  }
+}

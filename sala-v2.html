@@ -1,0 +1,1223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" "#4c1d95" />
+  <title>Sala Devocional Privada</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔒%3C/text%3E%3C/svg%3E" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-1: #1a0f2e;
+      --bg-2: #2d1b4e;
+      --primary: #4c1d95;
+      --primary-light: #6b21a8;
+      --gold: #f5e6c8;
+      --gold-bright: #fff5d6;
+      --text: #f5e6c8;
+      --text-soft: #e9d5ff;
+      --error: #fca5a5;
+      --ok: #bbf7d0;
+    }
+    html, body {
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    body {
+      background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-1) 100%);
+      color: var(--text);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow-x: hidden;
+    }
+    header {
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, .35);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      text-align: center; flex-shrink: 0;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+    }
+    .brand-text h1 { font-size: 1.1rem; color: var(--gold-bright); font-weight: 700; }
+    .brand-text small { font-size: .75rem; opacity: .75; display: block; font-weight: 400; margin-top: 2px; }
+    header .voltar {
+      color: var(--text-soft); text-decoration: none;
+      font-size: .85rem; padding: 6px 14px;
+      border-radius: 8px; background: rgba(255, 255, 255, .08);
+    }
+    header .voltar:hover { background: rgba(255, 255, 255, .15); }
+
+    main {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px 16px;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, .35);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      padding: 28px 22px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+      backdrop-filter: blur(8px);
+    }
+    .card.hide, .chat.hide { display: none !important; }
+
+    .avatar {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+      font-size: 2.2rem; color: var(--primary); font-weight: 800;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+    }
+    .card h2 {
+      text-align: center; font-size: 1.4rem;
+      color: var(--gold-bright); margin-bottom: 8px;
+    }
+    .card-sub {
+      text-align: center; color: var(--text-soft);
+      margin-bottom: 22px; font-size: .92rem; line-height: 1.5;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: .85rem; margin-bottom: 6px;
+      color: var(--text-soft); font-weight: 600;
+    }
+    .field input {
+      width: 100%; padding: 13px 14px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 10px;
+      color: var(--gold-bright);
+      font-size: 1rem; font-family: inherit;
+      transition: all .2s;
+      -webkit-appearance: none;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--gold);
+      background: rgba(255, 255, 255, .12);
+      box-shadow: 0 0 0 3px rgba(245, 230, 200, .15);
+    }
+    .field input::placeholder { color: rgba(245, 230, 200, .4); }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: var(--gold); color: var(--primary);
+      border: none; border-radius: 10px;
+      font-weight: 700; font-size: 1rem;
+      cursor: pointer; transition: all .2s;
+      font-family: inherit; margin-top: 4px;
+    }
+    .btn-primary:hover { background: #fff; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-primary.secondary {
+      background: var(--primary-light); color: var(--gold-bright);
+      border: 1px solid rgba(245, 230, 200, .25);
+    }
+    .btn-primary.secondary:hover { background: #7c2dac; transform: translateY(-1px); }
+
+    .btn-link {
+      display: block; width: 100%;
+      background: none; border: none;
+      color: var(--text-soft); font-size: .88rem;
+      text-decoration: underline; cursor: pointer;
+      padding: 10px; margin-top: 6px;
+      font-family: inherit;
+    }
+    .btn-link:hover { color: var(--gold-bright); }
+    .divider {
+      display: flex; align-items: center;
+      margin: 18px 0; gap: 10px;
+      color: var(--text-soft); font-size: .8rem;
+    }
+    .divider::before, .divider::after {
+      content: ""; flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, .15);
+    }
+
+    .alert {
+      padding: 12px 14px; border-radius: 10px;
+      margin-bottom: 14px; font-size: .9rem;
+      display: none; line-height: 1.4;
+    }
+    .alert.show { display: block; }
+    .alert.ok { background: rgba(34, 197, 94, .18); color: var(--ok); border: 1px solid rgba(34, 197, 94, .35); }
+    .alert.err { background: rgba(239, 68, 68, .18); color: var(--error); border: 1px solid rgba(239, 68, 68, .35); }
+
+    .chat {
+      width: 100%; max-width: 720px;
+      background: rgba(0, 0, 0, .35);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      height: min(80vh, 700px);
+    }
+    .chat-head {
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, .3);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .chat-head .ava {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-weight: 800; font-size: 1.05rem;
+    }
+    .chat-head .info { flex: 1; min-width: 0; }
+    .chat-head .info h3 { font-size: 1rem; color: var(--gold-bright); }
+    .chat-head .info small { font-size: .75rem; color: var(--text-soft); }
+    .chat-head .logout {
+      background: transparent; border: 1px solid rgba(255, 255, 255, .18);
+      color: var(--text-soft); padding: 7px 12px; border-radius: 8px;
+      cursor: pointer; font-size: .82rem; font-family: inherit;
+    }
+    .chat-head .logout:hover { background: rgba(255, 255, 255, .08); }
+
+    .btn-audio {
+      background: rgba(255, 255, 255, .08); border: 1px solid rgba(245, 230, 200, .3);
+      color: var(--gold-bright); padding: 7px 10px; border-radius: 8px;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      font-family: inherit; font-size: .82rem;
+      transition: all .2s;
+    }
+    .btn-audio:hover { background: rgba(245, 230, 200, .15); }
+    .btn-audio:active { transform: scale(.95); }
+    .btn-audio.speaking {
+      background: rgba(245, 230, 200, .25);
+      animation: pulse-audio 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-audio {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 230, 200, .5); }
+      50% { box-shadow: 0 0 0 6px rgba(245, 230, 200, 0); }
+    }
+    .btn-audio svg { display: block; }
+
+    /* ===== Mic (enviar áudio) — assinatura visual da sala ===== */
+    .chat-input button.btn-mic {
+      position: relative;
+      padding: 0 16px 0 14px;
+      height: 44px;
+      min-width: 96px;
+      border-radius: 22px;
+      gap: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit;
+      font-size: .88rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+      cursor: pointer;
+      flex-shrink: 0;
+      /* Disco branco-quente — convida ao recolhimento, alto contraste no fundo roxo */
+      background: #fff8eb;
+      color: #4c1d95;
+      border: 1px solid #f5d77a;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .9) inset,
+        0 6px 18px rgba(245, 196, 81, .22),
+        0 1px 2px rgba(0, 0, 0, .4);
+      transition: transform .18s ease, box-shadow .25s ease, background .25s ease, color .25s ease;
+    }
+    .chat-input button.btn-mic:hover {
+      background: #fff;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 1) inset,
+        0 8px 22px rgba(245, 196, 81, .35),
+        0 1px 2px rgba(0, 0, 0, .4);
+    }
+    .chat-input button.btn-mic:active { transform: scale(.97); }
+    .chat-input button.btn-mic:focus-visible {
+      outline: 2px solid rgba(245, 196, 81, .85);
+      outline-offset: 3px;
+    }
+    .chat-input button.btn-mic .mic-label { line-height: 1; color: #4c1d95; }
+    .chat-input button.btn-mic .mic-icon-wrap { color: #4c1d95; }
+
+    /* Estado: gravando — respira como oração, vermelho coral quente */
+    .chat-input button.btn-mic.recording {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #fca5a5;
+      animation: mic-breath 2.4s ease-in-out infinite;
+    }
+    .chat-input button.btn-mic.recording .mic-label,
+    .chat-input button.btn-mic.recording .mic-icon-wrap { color: #ffffff; }
+    .chat-input button.btn-mic.recording .mic-icon-wrap {
+      animation: mic-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes mic-breath {
+      0%, 100% { box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 6px 18px rgba(239, 68, 68, .35), 0 0 0 0 rgba(239, 68, 68, .55); }
+      50%      { box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 6px 18px rgba(239, 68, 68, .35), 0 0 0 12px rgba(239, 68, 68, 0); }
+    }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%      { transform: scale(.78); opacity: .85; }
+    }
+
+    /* Estado: enviando — spinner alto contraste, dourado vivo */
+    .chat-input button.btn-mic.uploading {
+      cursor: wait;
+      background: #fff8eb;
+      color: #d97706;
+    }
+    .chat-input button.btn-mic.uploading .mic-label,
+    .chat-input button.btn-mic.uploading .mic-icon-wrap { color: #d97706; }
+    .chat-input button.btn-mic.uploading .mic-icon-wrap {
+      animation: mic-spin 1.1s linear infinite;
+    }
+    @keyframes mic-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Respeita prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      .chat-input button.btn-mic.recording,
+      .chat-input button.btn-mic.recording .mic-icon-wrap,
+      .chat-input button.btn-mic.uploading .mic-icon-wrap { animation: none; }
+    }
+
+    .chat-input button.btn-mic svg { display: block; }
+    .chat-input button.btn-mic .mic-icon-wrap {
+      width: 22px; height: 22px;
+      display: grid; place-items: center;
+      transition: transform .2s ease;
+    }
+
+    /* Áudio do user na bolha */
+    .bubble.audio-bubble { padding: 8px 12px; }
+    .bubble audio {
+      width: 100%;
+      max-width: 260px;
+      display: block;
+      margin-top: 4px;
+    }
+    .bubble .audio-transcript {
+      font-size: .82rem;
+      opacity: .75;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* ===== Ações da resposta do Irmão Eliseu (Copiar / Compartilhar) ===== */
+    .bubble-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      padding: 0 2px;
+    }
+    .bubble-actions:empty { display: none; }
+    .bubble-actions button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      /* Alto contraste sobre o fundo roxo escuro do .bubble.bot */
+      background: #fff8eb;
+      color: #4c1d95;
+      border: 1px solid #f5d77a;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+      transition: background .18s ease, transform .15s ease, box-shadow .2s ease;
+    }
+    .bubble-actions button:hover {
+      background: #ffffff;
+      box-shadow: 0 3px 8px rgba(245, 196, 81, .25), 0 1px 2px rgba(0, 0, 0, .35);
+    }
+    .bubble-actions button:active { transform: scale(.96); }
+    .bubble-actions button:focus-visible {
+      outline: 2px solid rgba(245, 196, 81, .85);
+      outline-offset: 2px;
+    }
+    .bubble-actions button svg { display: block; }
+    .bubble-actions button.copied {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #4ade80;
+    }
+    .bubble-actions button.copied svg { stroke: #ffffff; }
+    /* Em mobile: alinha à esquerda da bolha do bot (não estourar pra fora) */
+    @media (max-width: 640px) {
+      .bubble-actions { padding: 0 2px; }
+      .bubble-actions button { font-size: .78rem; padding: 6px 11px; }
+    }
+
+    .chat-msgs {
+      flex: 1; overflow-y: auto;
+      padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-msgs::-webkit-scrollbar { width: 5px; }
+    .chat-msgs::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .15); border-radius: 3px; }
+    .bubble {
+      max-width: 85%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      line-height: 1.5; font-size: .95rem;
+      word-wrap: break-word; overflow-wrap: break-word;
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: rgba(76, 29, 149, .65);
+      color: var(--gold-bright);
+      border-bottom-left-radius: 4px;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.typing { opacity: .75; }
+    .bubble.typing::after {
+      content: ' ●●●';
+      animation: blink 1.4s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+    .empty {
+      text-align: center; color: var(--text-soft);
+      font-size: .9rem; padding: 28px 14px; opacity: .85;
+    }
+
+    .chat-input {
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, .3);
+      border-top: 1px solid rgba(255, 255, 255, .1);
+      display: flex; gap: 8px; flex-shrink: 0;
+    }
+    .chat-input input {
+      flex: 1; min-width: 0;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 10px;
+      color: var(--gold-bright);
+      font-family: inherit; font-size: 1rem;
+      -webkit-appearance: none;
+    }
+    .chat-input input:focus {
+      outline: none;
+      border-color: var(--gold);
+      background: rgba(255, 255, 255, .12);
+    }
+    .chat-input input::placeholder { color: rgba(245, 230, 200, .4); }
+    .chat-input button {
+      padding: 12px 18px;
+      background: var(--gold); color: var(--primary);
+      border: none; border-radius: 10px;
+      font-weight: 700; cursor: pointer;
+      font-family: inherit; font-size: .95rem;
+      flex-shrink: 0;
+    }
+    .chat-input button:disabled { opacity: .55; cursor: not-allowed; }
+
+    footer {
+      padding: 14px 16px; text-align: center;
+      color: var(--text-soft); font-size: .8rem;
+      background: rgba(0, 0, 0, .35);
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      flex-shrink: 0;
+    }
+
+
+    .btn-google {
+      width: 100%; padding: 14px;
+      background: #fff; color: #1f1f1f;
+      border: 1px solid #dadce0;
+      border-radius: 10px;
+      font-weight: 600; font-size: 1rem;
+      cursor: pointer; transition: all .2s;
+      font-family: inherit; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-google:hover { background: #f7f8f8; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+    .btn-google:disabled { opacity: .55; cursor: not-allowed; }
+    .divider span { color: var(--text-soft); font-size: .8rem; background: rgba(0,0,0,.35); padding: 0 8px; border-radius: 4px; }
+
+    @media (max-width: 480px) {
+      .card { padding: 24px 18px; }
+      .avatar { width: 70px; height: 70px; font-size: 2rem; }
+      .card h2 { font-size: 1.25rem; }
+      .chat { height: 82vh; border-radius: 14px; }
+      .bubble { font-size: .92rem; }
+    }
+
+    /* ===== Mobile: input em cima, mic + enviar embaixo lado a lado ===== */
+    @media (max-width: 640px) {
+      .chat-input {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 12px calc(12px + env(safe-area-inset-bottom)) 12px;
+      }
+      .chat-input input {
+        width: 100%;
+        order: 1;
+        font-size: 16px; /* evita zoom automático iOS */
+      }
+      .chat-input button.btn-mic {
+        order: 2;
+        width: calc(50% - 4px);
+        min-width: 0;
+        height: 44px;
+      }
+      .chat-input button#btn-msg {
+        order: 3;
+        width: calc(50% - 4px);
+        padding: 12px 12px;
+      }
+      /* Wrap mic + enviar em row quando mobile. Como o form é flex column,
+         usamos grid 2-col pra alinhar perfeito. */
+      .chat-input {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "input  input"
+          "mic    send";
+        column-gap: 8px;
+      }
+      .chat-input input     { grid-area: input; }
+      .chat-input button.btn-mic { grid-area: mic; }
+      .chat-input button#btn-msg { grid-area: send; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🔒</div>
+      <div class="brand-text">
+        <h1>Sala Devocional</h1>
+        <small>Irmão Eliseu · conversa particular</small>
+      </div>
+    </div>
+    <a href="/" class="voltar">← Voltar à Rádio</a>
+  </header>
+
+  <main>
+    <!-- LOGIN (google + email/senha) -->
+    <section id="mode-login" class="card">
+      <div class="avatar">E</div>
+      <h2>Entrar na Sala</h2>
+      <p class="card-sub">Acesse com seu e-mail e senha pra conversar com o Irmão Eliseu.</p>
+
+      <div id="alert-login" class="alert"></div>
+
+            <!-- GOOGLE OAUTH -->
+      <button id="btn-google" class="btn-google" type="button">
+        <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.583-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+        </svg>
+        Entrar com Google
+      </button>
+
+      <div class="divider"><span>ou com email e senha</span></div>
+
+<form id="form-login" autocomplete="on">
+        <div class="field">
+          <label for="email-login">E-mail</label>
+          <input type="email" id="email-login" required placeholder="voce@email.com"
+                 autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="pwd-login">Senha</label>
+          <input type="password" id="pwd-login" required placeholder="••••••••"
+                 autocomplete="current-password" minlength="6" />
+        </div>
+        <button type="submit" id="btn-login" class="btn-primary">Entrar</button>
+      </form>
+
+      <button id="btn-cadastrar" class="btn-link">Não tem conta? Cadastre-se</button>
+      <button id="btn-esqueci" class="btn-link">Esqueci minha senha</button>
+
+      <div class="divider">ou</div>
+      <button id="btn-magic" class="btn-primary secondary">Entrar com link no e-mail</button>
+    </section>
+
+    <!-- CADASTRO (nome + email + senha) -->
+    <section id="mode-cadastro" class="card hide">
+      <div class="avatar">E</div>
+      <h2>Criar Conta</h2>
+      <p class="card-sub">Comece sua conversa particular com o Irmão Eliseu. É rápido e de graça.</p>
+
+      <div id="alert-cadastro" class="alert"></div>
+
+      <form id="form-cadastro" autocomplete="on">
+        <div class="field">
+          <label for="nome-cad">Seu nome</label>
+          <input type="text" id="nome-cad" required placeholder="Como você se chama?"
+                 autocomplete="name" minlength="2" maxlength="60" />
+        </div>
+        <div class="field">
+          <label for="email-cad">E-mail</label>
+          <input type="email" id="email-cad" required placeholder="voce@email.com"
+                 autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="pwd-cad">Senha (mínimo 6)</label>
+          <input type="password" id="pwd-cad" required placeholder="••••••••"
+                 autocomplete="new-password" minlength="6" maxlength="72" />
+        </div>
+        <button type="submit" id="btn-cad-submit" class="btn-primary">Criar Conta</button>
+      </form>
+
+      <button id="btn-ja-tenho" class="btn-link">Já tenho conta</button>
+    </section>
+
+    <!-- ESQUECI A SENHA -->
+    <section id="mode-esqueci" class="card hide">
+      <div class="avatar">📬</div>
+      <h2>Esqueci a senha</h2>
+      <p class="card-sub">Digite seu e-mail. Você receberá um link pra criar uma nova senha.</p>
+
+      <div id="alert-esqueci" class="alert"></div>
+
+      <form id="form-esqueci" autocomplete="on">
+        <div class="field">
+          <label for="email-esqueci">E-mail</label>
+          <input type="email" id="email-esqueci" required placeholder="voce@email.com"
+                 autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" />
+        </div>
+        <button type="submit" id="btn-reset" class="btn-primary">Enviar link de recuperação</button>
+      </form>
+
+      <button id="btn-voltar-login" class="btn-link">Voltar pro login</button>
+    </section>
+
+    <!-- MAGIC LINK (só email) -->
+    <section id="mode-magic" class="card hide">
+      <div class="avatar">E</div>
+      <h2>Entrar com link</h2>
+      <p class="card-sub">Sem senha. Receba um link no e-mail pra entrar direto.</p>
+
+      <div id="alert-magic" class="alert"></div>
+
+      <form id="form-magic" autocomplete="on">
+        <div class="field">
+          <label for="email-magic">E-mail</label>
+          <input type="email" id="email-magic" required placeholder="voce@email.com"
+                 autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" />
+        </div>
+        <button type="submit" id="btn-magic-send" class="btn-primary">Enviar link de acesso</button>
+      </form>
+
+      <button id="btn-voltar-login-magic" class="btn-link">Voltar pro login com senha</button>
+    </section>
+
+    <!-- CHAT -->
+    <section id="mode-chat" class="chat hide">
+      <div class="chat-head">
+        <div class="ava">E</div>
+        <div class="info">
+          <h3>Irmão Eliseu</h3>
+          <small id="user-email">sala devocional</small>
+        </div>
+        <button id="btn-falar" class="btn-audio" type="button" aria-label="Ouvir a última resposta do Irmão Eliseu" title="Ouvir em voz alta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+          <span>Ouvir</span>
+        </button>
+        <button id="btn-sair" class="logout">Sair</button>
+      </div>
+      <div id="chat-msgs" class="chat-msgs">
+        <div class="empty">Comece sua conversa. Conte o que você precisa. O Irmão Eliseu está aqui pra ouvir e orientar.</div>
+      </div>
+      <form id="form-msg" class="chat-input">
+        <input type="text" id="msg-input" placeholder="Escreva sua mensagem…" autocomplete="off" required maxlength="2000" />
+        <button type="button" id="btn-mic" class="btn-mic" aria-label="Contar ao Irmão Eliseu o que precisa" title="Conte o que precisa">
+          <span class="mic-icon-wrap">
+            <svg id="mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8"  y1="23" x2="16" y2="23"/>
+            </svg>
+            <svg id="mic-stop" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
+            </svg>
+          </span>
+          <span class="mic-label" id="mic-label">Falar</span>
+        </button>
+        <button type="submit" id="btn-msg">Enviar</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>Devocional 12 · A palavra que transforma · Sua conversa fica só entre você e o Irmão Eliseu.</footer>
+
+  <script>
+    const SUPABASE_URL = 'https://yfnzlowtgnlqizobnslh.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmbnpsb3d0Z25scWl6b2Juc2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNjI5MDgsImV4cCI6MjEwMDgzODkwOH0.3e2Hw-vwxH6e4P3VD6oXCUYt0s2YxziBMjuFR1wUMKw';
+    const API = '/sala-api';
+
+    let supabase = null;
+    function getSupabase() {
+      if (!supabase) {
+        if (!window.supabase) throw new Error('Supabase JS não carregou (sem internet?)');
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            storage: window.localStorage,
+            storageKey: 'sala-auth',
+            detectSessionInUrl: true
+          }
+        });
+      }
+      return supabase;
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const show = (mode) => {
+      ['mode-login', 'mode-cadastro', 'mode-esqueci', 'mode-magic', 'mode-chat'].forEach(m => $(m).classList.add('hide'));
+      $(mode).classList.remove('hide');
+    };
+    const alertBox = (id, type, msg) => {
+      const el = $(id);
+      el.className = 'alert show ' + type;
+      el.textContent = msg;
+      if (type === 'ok') setTimeout(() => { el.className = 'alert'; }, 8000);
+    };
+
+    // ============ LOGIN (email + senha) ============
+    $('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('email-login').value.trim().toLowerCase();
+      const pwd = $('pwd-login').value;
+      if (!email || !pwd) return;
+      const btn = $('btn-login');
+      btn.disabled = true; btn.textContent = 'Entrando…';
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+        if (error) throw error;
+        await startChat(data.session);
+      } catch (err) {
+        alertBox('alert-login', 'err', err.message || 'E-mail ou senha inválidos.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Entrar';
+      }
+    });
+
+    // ============ CADASTRO ============
+    $('form-cadastro').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = $('nome-cad').value.trim();
+      const email = $('email-cad').value.trim().toLowerCase();
+      const pwd = $('pwd-cad').value;
+      if (!nome || !email || !pwd) return;
+      if (pwd.length < 6) {
+        alertBox('alert-cadastro', 'err', 'Senha precisa ter pelo menos 6 caracteres.');
+        return;
+      }
+      const btn = $('btn-cad-submit');
+      btn.disabled = true; btn.textContent = 'Criando…';
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb.auth.signUp({
+          email, password: pwd,
+          options: {
+            data: { nome },
+            emailRedirectTo: window.location.origin + '/sala.html'
+          }
+        });
+        if (error) throw error;
+        if (data.session) {
+          await startChat(data.session);
+        } else {
+          // Confirmação de email obrigatória
+          alertBox('alert-cadastro', 'ok', 'Conta criada! Verifique seu e-mail pra confirmar antes de entrar.');
+          setTimeout(() => show('mode-login'), 4000);
+        }
+      } catch (err) {
+        alertBox('alert-cadastro', 'err', err.message || 'Falha ao criar conta.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Criar Conta';
+      }
+    });
+
+    // ============ ESQUECI A SENHA ============
+    $('form-esqueci').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('email-esqueci').value.trim().toLowerCase();
+      if (!email) return;
+      const btn = $('btn-reset');
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      try {
+        const sb = getSupabase();
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/sala.html'
+        });
+        if (error) throw error;
+        alertBox('alert-esqueci', 'ok', 'Link de recuperação enviado! Verifique sua caixa de entrada.');
+      } catch (err) {
+        alertBox('alert-esqueci', 'err', err.message || 'Falha ao enviar link.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Enviar link de recuperação';
+      }
+    });
+
+    // ============ MAGIC LINK ============
+    $('form-magic').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('email-magic').value.trim().toLowerCase();
+      if (!email) return;
+      const btn = $('btn-magic-send');
+      btn.disabled = true; btn.textContent = 'Enviando…';
+      try {
+        const sb = getSupabase();
+        const { error } = await sb.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin + '/sala.html',
+            shouldCreateUser: true
+          }
+        });
+        if (error) throw error;
+        alertBox('alert-magic', 'ok', 'Link enviado! Confira seu e-mail (e o spam).');
+      } catch (err) {
+        alertBox('alert-magic', 'err', err.message || 'Falha ao enviar.');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Enviar link de acesso';
+      }
+    });
+
+    // ============ NAVEGAÇÃO ============
+    $('btn-cadastrar').addEventListener('click', () => { $('email-cad').value = $('email-login').value; show('mode-cadastro'); });
+    $('btn-esqueci').addEventListener('click', () => { $('email-esqueci').value = $('email-login').value; show('mode-esqueci'); });
+    $('btn-magic').addEventListener('click', () => { $('email-magic').value = $('email-login').value; show('mode-magic'); });
+    $('btn-ja-tenho').addEventListener('click', () => show('mode-login'));
+    $('btn-voltar-login').addEventListener('click', () => show('mode-login'));
+    $('btn-voltar-login-magic').addEventListener('click', () => show('mode-login'));
+
+    // ============ CHAT ============
+    $('form-msg').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = $('msg-input');
+      const text = input.value.trim();
+      if (!text) return;
+      const btn = $('btn-msg');
+      btn.disabled = true;
+      appendMsg('user', text);
+      input.value = '';
+      const typing = appendMsg('bot', 'Irmão Eliseu está digitando');
+      try {
+        const sb = getSupabase();
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) throw new Error('Sessão expirou. Faça login de novo.');
+        const r = await fetch(API + '/message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token
+          },
+          body: JSON.stringify({ text })
+        });
+        const data = await r.json();
+        typing.remove();
+        if (r.ok) {
+          // back retorna {messages: [user, eliseu]} ou {reply: '...'}
+          let reply = '';
+          if (Array.isArray(data.messages) && data.messages.length >= 2) {
+            const last = data.messages[data.messages.length - 1];
+            reply = last.text || last.content || '';
+          } else if (data.reply) {
+            reply = data.reply;
+          } else if (data.message) {
+            reply = data.message;
+          }
+          appendMsg('bot', reply || '(sem resposta)');
+          // TTS automático (mesma do Leitor Inteligente)
+          if (reply) {
+            lastEliseuReply = reply;
+            falar(reply);
+          }
+        } else if (r.status === 401) {
+          await sb.auth.signOut();
+          show('mode-login');
+          alertBox('alert-login', 'err', 'Sessão expirou. Entre de novo.');
+        } else {
+          appendMsg('bot', '⚠️ ' + (data.error || 'Erro ao enviar.'));
+        }
+      } catch (err) {
+        typing.remove();
+        if (/sessão/i.test(err.message)) show('mode-login');
+        appendMsg('bot', '⚠️ ' + err.message);
+      } finally {
+        btn.disabled = false;
+        input.focus();
+      }
+    });
+
+    $('btn-sair').addEventListener('click', async () => {
+      try { await getSupabase().auth.signOut(); } catch {}
+      show('mode-login');
+    });
+
+    // ============ MIC (enviar áudio) ============
+    (function initMic() {
+      const btn = $('btn-mic');
+      if (!btn) return;
+      const iconMic = $('mic-icon');
+      const iconStop = $('mic-stop');
+      const label = $('mic-label');
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let stream = null;
+      let state = 'idle'; // idle | recording | uploading
+
+      function setIdle() {
+        state = 'idle';
+        btn.classList.remove('recording', 'uploading');
+        btn.disabled = false;
+        if (iconMic) iconMic.style.display = '';
+        if (iconStop) iconStop.style.display = 'none';
+        if (label) label.textContent = 'Falar';
+        btn.title = 'Conte o que precisa';
+        btn.setAttribute('aria-label', 'Contar ao Irmão Eliseu o que precisa');
+      }
+      function setRecording() {
+        state = 'recording';
+        btn.classList.add('recording');
+        btn.disabled = false;
+        if (iconMic) iconMic.style.display = 'none';
+        if (iconStop) iconStop.style.display = '';
+        if (label) label.textContent = 'Ouvindo…';
+        btn.title = 'Toque pra enviar';
+        btn.setAttribute('aria-label', 'Parar gravação e enviar');
+      }
+      function setUploading() {
+        state = 'uploading';
+        btn.classList.remove('recording');
+        btn.classList.add('uploading');
+        btn.disabled = true;
+        if (iconMic) iconMic.style.display = '';
+        if (iconStop) iconStop.style.display = 'none';
+        if (label) label.textContent = 'Enviando';
+        btn.title = 'Enviando…';
+      }
+
+      async function startRecording() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+          });
+          const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+            .find(m => MediaRecorder.isTypeSupported(m)) || '';
+          mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+          mediaRecorder.onstop = handleStop;
+          mediaRecorder.start();
+          setRecording();
+        } catch (e) {
+          console.error('[mic] getUserMedia falhou:', e);
+          alert('Não foi possível acessar o microfone. Verifique as permissões do navegador.');
+          setIdle();
+        }
+      }
+
+      function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      }
+
+      async function handleStop() {
+        setUploading();
+        const blob = new Blob(audioChunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
+        if (blob.size < 800) {
+          alert('Áudio muito curto. Tenta de novo, fala um pouquinho mais.');
+          setIdle();
+          return;
+        }
+        try {
+          const sb = getSupabase();
+          const { data: { session } } = await sb.auth.getSession();
+          if (!session) throw new Error('Sessão expirou. Faça login de novo.');
+          // Backend /api/sala/audio espera multipart/form-data com field "audio"
+          // (handler usa save_upload que parseia boundary). Browser seta Content-Type + boundary certo.
+          const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+          const filename = `rec-${Date.now()}.${ext}`;
+          const fd = new FormData();
+          fd.append('audio', blob, filename);
+          const r = await fetch(API + '/audio', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + session.access_token
+            },
+            body: fd
+          });
+          if (r.status === 401) {
+            await sb.auth.signOut();
+            show('mode-login');
+            alertBox('alert-login', 'err', 'Sessão expirou. Entre de novo.');
+            return;
+          }
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+          // Backend devolve {messages: [user, eliseu]}
+          let reply = '';
+          if (Array.isArray(data.messages) && data.messages.length >= 2) {
+            const userMsg = data.messages[0];
+            const eliseuMsg = data.messages[1];
+            appendMsg('user', userMsg.text || '', userMsg.audio_url || null);
+            reply = eliseuMsg.text || '';
+            appendMsg('bot', reply || '(sem resposta)');
+          } else if (data.reply) {
+            reply = data.reply;
+            appendMsg('bot', reply);
+          } else {
+            appendMsg('bot', '(enviado, aguardando resposta)');
+          }
+          if (reply) {
+            lastEliseuReply = reply;
+            falar(reply);
+          }
+          console.log('[mic] upload OK');
+        } catch (e) {
+          console.error('[mic] upload falhou:', e);
+          appendMsg('bot', '⚠️ ' + (e.message || 'Erro no envio do áudio.'));
+        } finally {
+          setIdle();
+        }
+      }
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (state === 'idle') startRecording();
+        else if (state === 'recording') stopRecording();
+      });
+
+      setIdle();
+    })();
+
+    function appendMsg(role, text, audioUrl) {
+      const box = $('chat-msgs');
+      const empty = box.querySelector('.empty');
+      if (empty) empty.remove();
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble ' + role + (audioUrl ? ' audio-bubble' : '');
+      const cleanText = String(text || '').trim();
+      if (audioUrl) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.preload = 'metadata';
+        audio.src = audioUrl;
+        wrap.appendChild(audio);
+        const caption = document.createElement('div');
+        caption.className = 'audio-transcript';
+        caption.textContent = cleanText && cleanText !== '(áudio sem fala)' ? '🎙️ ' + cleanText : '🎙️ (áudio sem fala)';
+        wrap.appendChild(caption);
+      } else {
+        wrap.textContent = cleanText;
+      }
+      // Ações só nas respostas do Irmão Eliseu (role === 'bot') com texto válido
+      // (não em "(sem resposta)", "⚠️ ..." ou vazio)
+      if (role === 'bot' && cleanText && !/^(\(.*\)|⚠️)/.test(cleanText)) {
+        const actions = document.createElement('div');
+        actions.className = 'bubble-actions';
+
+        // Botão Copiar
+        const btnCopy = document.createElement('button');
+        btnCopy.type = 'button';
+        btnCopy.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span>';
+        btnCopy.title = 'Copiar a mensagem';
+        btnCopy.setAttribute('aria-label', 'Copiar mensagem do Irmão Eliseu');
+        btnCopy.addEventListener('click', async () => {
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(cleanText);
+            } else {
+              // fallback pra navegadores antigos
+              const ta = document.createElement('textarea');
+              ta.value = cleanText;
+              ta.style.position = 'fixed'; ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand('copy');
+              ta.remove();
+            }
+            btnCopy.classList.add('copied');
+            btnCopy.querySelector('span').textContent = 'Copiado!';
+            setTimeout(() => {
+              btnCopy.classList.remove('copied');
+              btnCopy.querySelector('span').textContent = 'Copiar';
+            }, 1600);
+          } catch (e) {
+            console.error('[copy] falhou:', e);
+            alert('Não consegui copiar. Tenta selecionar o texto manualmente.');
+          }
+        });
+        actions.appendChild(btnCopy);
+
+        // Botão Compartilhar (WhatsApp)
+        const btnShare = document.createElement('button');
+        btnShare.type = 'button';
+        btnShare.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5"  r="3"/><circle cx="6"  cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg><span>Compartilhar</span>';
+        btnShare.title = 'Compartilhar no WhatsApp';
+        btnShare.setAttribute('aria-label', 'Compartilhar mensagem do Irmão Eliseu no WhatsApp');
+        btnShare.addEventListener('click', () => {
+          const msg = 'Irmão Eliseu disse:\n\n' + cleanText + '\n\n— Devocional 12';
+          const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        });
+        actions.appendChild(btnShare);
+
+        wrap.appendChild(actions);
+      }
+      box.appendChild(wrap);
+      box.scrollTop = box.scrollHeight;
+      return wrap;
+    }
+
+    // ============ TTS (Web Speech API) - mesma do Leitor Inteligente ============
+    let lastEliseuReply = '';
+    let ttsVoices = [];
+    function carregarVozes() {
+      if (!('speechSynthesis' in window)) return;
+      ttsVoices = window.speechSynthesis.getVoices();
+    }
+    if ('speechSynthesis' in window) {
+      carregarVozes();
+      window.speechSynthesis.onvoiceschanged = carregarVozes;
+    }
+    function falar(texto) {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window) || !texto) return;
+      window.speechSynthesis.cancel();
+      const t = new SpeechSynthesisUtterance(texto);
+      t.lang = 'pt-BR';
+      t.rate = 1;
+      // tenta achar voz pt-BR mais natural
+      const vozPT = ttsVoices.find(v => v.lang === 'pt-BR' && /female|mulher|feminina/i.test(v.name))
+                   || ttsVoices.find(v => v.lang === 'pt-BR')
+                   || ttsVoices.find(v => v.lang.startsWith('pt'));
+      if (vozPT) t.voice = vozPT;
+      t.onstart = () => { $('btn-falar')?.classList.add('speaking'); $('btn-falar').querySelector('span').textContent = 'Falando…'; };
+      t.onend = t.onerror = () => { $('btn-falar')?.classList.remove('speaking'); $('btn-falar').querySelector('span').textContent = 'Ouvir'; };
+      window.speechSynthesis.speak(t);
+    }
+    function pararFalar() {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      $('btn-falar')?.classList.remove('speaking');
+      $('btn-falar').querySelector('span').textContent = 'Ouvir';
+    }
+    $('btn-falar').addEventListener('click', () => {
+      if ($('btn-falar').classList.contains('speaking')) {
+        pararFalar();
+        return;
+      }
+      if (lastEliseuReply) falar(lastEliseuReply);
+      else alert('Aguardando a primeira resposta do Irmão Eliseu…');
+    });
+
+    async function startChat(session) {
+      const user = session.user;
+      $('user-email').textContent = user.email || 'sala devocional';
+      show('mode-chat');
+      try {
+        const r = await fetch(API + '/history', {
+          headers: { 'Authorization': 'Bearer ' + session.access_token }
+        });
+        if (r.ok) {
+          const hist = await r.json();
+          $('chat-msgs').innerHTML = '';
+          const msgs = Array.isArray(hist.messages) ? hist.messages : [];
+          if (msgs.length === 0) {
+            $('chat-msgs').innerHTML = '<div class="empty">Comece sua conversa. Conte o que você precisa. O Irmão Eliseu está aqui pra ouvir e orientar.</div>';
+          } else {
+            msgs.forEach(m => appendMsg(m.role || 'bot', m.text || m.content || '', m.audio_url || null));
+          }
+        }
+      } catch {}
+    }
+
+
+    // ============ GOOGLE OAUTH ============
+    $('btn-google').addEventListener('click', async () => {
+      const btn = $('btn-google');
+      btn.disabled = true; btn.textContent = 'Abrindo Google…';
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + '/sala.html',
+            queryParams: { access_type: 'offline', prompt: 'consent' }
+          }
+        });
+        if (error) throw error;
+        // O navegador redireciona pra Google — não vem pra cá
+      } catch (err) {
+        alertBox('alert-login', 'err', 'Google OAuth falhou: ' + (err.message || 'desconhecido'));
+        btn.disabled = false; btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.583-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>Entrar com Google</svg>';
+      }
+    });
+
+    // ============ INIT ============
+    (async function init() {
+      try {
+        const sb = getSupabase();
+        const { data: { session } } = await sb.auth.getSession();
+        if (session && session.user) {
+          await startChat(session);
+          return;
+        }
+        show('mode-login');
+      } catch (err) {
+        show('mode-login');
+      }
+    })();
+
+    // Detecta magic link / reset password callback
+    if (window.supabase) {
+      window.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY' && session) {
+          // Permite trocar senha
+          const newPwd = prompt('Defina sua nova senha (mínimo 6 caracteres):');
+          if (newPwd && newPwd.length >= 6) {
+            const { error } = await getSupabase().auth.updateUser({ password: newPwd });
+            if (!error) {
+              alert('Senha atualizada! Entrando...');
+              await startChat(session);
+            }
+          }
+        }
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+          await startChat(session);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

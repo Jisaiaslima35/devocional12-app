@@ -1,0 +1,41 @@
+{
+  "name": "Devocional 12 — A palavra que transforma",
+  "short_name": "Devocional 12",
+  "description": "Rádio gospel 24h com locutor IA, mural de oração, sala devocional privada e notificações de orações ao vivo.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "lang": "pt-BR",
+  "categories": ["music", "lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat ao vivo",
+      "short_name": "Chat",
+      "url": "/#chat-ao-vivo",
+      "description": "Converse com a rádio e peça oração ao vivo"
+    },
+    {
+      "name": "Mural de oração",
+      "short_name": "Mural",
+      "url": "/#mural-oracoes",
+      "description": "Deixe seu pedido de oração"
+    }
+  ]
+}
