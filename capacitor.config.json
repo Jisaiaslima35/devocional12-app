@@ -10,6 +10,11 @@
   },
   "server": {
     "androidScheme": "https",
-    "cleartext": false
+    "cleartext": false,
+    "url": "https://devocional12.automacaojs.us",
+    "allowNavigation": [
+      "devocional12.automacaojs.us",
+      "webpush.automacaojs.us"
+    ]
   }
 }
