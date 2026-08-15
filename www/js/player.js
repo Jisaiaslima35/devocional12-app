@@ -28,26 +28,47 @@
   var debugLines = [];
   function debugLog(msg, color) {
     debugLines.push((color || '#fbbf24') + '|' + msg);
-    if (debugLines.length > 6) debugLines.shift();
+    if (debugLines.length > 12) debugLines.shift();
     renderDebug();
     try { console.log('[MS-debug]', msg); } catch(e){}
+  }
+  function debugError(tag, e) {
+    var msg = tag + ': ';
+    try {
+      if (e && typeof e === 'object') {
+        msg += (e.name || 'Error') + ' — ' + (e.message || JSON.stringify(e)).slice(0, 200);
+        if (e.code !== undefined) msg += ' [code=' + e.code + ']';
+        if (e.stack) msg += '\n' + String(e.stack).split('\n').slice(0, 3).join(' | ').slice(0, 250);
+      } else {
+        msg += String(e).slice(0, 250);
+      }
+    } catch (_) { msg += '(erro ao serializar)'; }
+    debugLog(msg, '#fca5a5');
   }
   function renderDebug() {
     var el = document.getElementById('ms-debug-overlay');
     if (!el) return;
     el.innerHTML = debugLines.map(function (l) {
       var p = l.split('|');
-      return '<div style="color:' + p[0] + '">' + p.slice(1).join('|') + '</div>';
+      return '<div style="color:' + p[0] + ';word-break:break-all">' + p.slice(1).join('|') + '</div>';
     }).join('');
   }
   function createDebugOverlay() {
     if (document.getElementById('ms-debug-overlay')) return;
     var el = document.createElement('div');
     el.id = 'ms-debug-overlay';
-    el.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;background:rgba(0,0,0,.82);color:#fff;font:11px/1.35 monospace;padding:7px 10px;border-radius:6px;max-width:300px;pointer-events:none;border:1px solid #fbbf24;white-space:pre-wrap';
+    el.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;background:rgba(0,0,0,.88);color:#fff;font:10px/1.3 monospace;padding:7px 10px;border-radius:6px;max-width:340px;pointer-events:none;border:1px solid #fbbf24;white-space:pre-wrap;max-height:60vh;overflow:auto';
     el.innerHTML = '<div style="color:#fbbf24">MS-debug init...</div>';
     document.body.appendChild(el);
   }
+
+  // Captura erros globais (promises + sync) — overlay mostra tudo
+  window.addEventListener('error', function (e) {
+    debugError('window.error', e.error || (e.message + ' @ ' + e.filename + ':' + e.lineno));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    debugError('unhandled.promise', e.reason || '(sem reason)');
+  });
 
   function loadMediaSession() {
     createDebugOverlay();
@@ -108,18 +129,25 @@
     var audioEl = document.getElementById('lp-audio');
     if (!audioEl) return;
     // play da notificação → toca o <audio>
-    MediaSession.setActionHandler({ action: 'play' }, function () {
-      audioEl.muted = false;
-      if (typeof window.radioPlay === 'function') window.radioPlay();
-    }).catch(function () {});
-    // pause da notificação → pausa o <audio>
-    MediaSession.setActionHandler({ action: 'pause' }, function () {
-      audioEl.pause();
-    }).catch(function () {});
-    // stop (algumas skins Android usam) → pausa
-    MediaSession.setActionHandler({ action: 'stop' }, function () {
-      audioEl.pause();
-    }).catch(function () {});
+    try {
+      MediaSession.setActionHandler({ action: 'play' }, function () {
+        try {
+          audioEl.muted = false;
+          if (typeof window.radioPlay === 'function') window.radioPlay();
+        } catch (e) { debugError('handler play', e); }
+      }).catch(function (e) { debugError('setActionHandler play', e); });
+      // pause da notificação → pausa o <audio>
+      MediaSession.setActionHandler({ action: 'pause' }, function () {
+        try { audioEl.pause(); } catch (e) { debugError('handler pause', e); }
+      }).catch(function (e) { debugError('setActionHandler pause', e); });
+      // stop (algumas skins Android usam) → pausa
+      MediaSession.setActionHandler({ action: 'stop' }, function () {
+        try { audioEl.pause(); } catch (e) { debugError('handler stop', e); }
+      }).catch(function (e) { debugError('setActionHandler stop', e); });
+      debugLog('bindMediaSessionActions OK (3 actions)', '#86efac');
+    } catch (e) {
+      debugError('bindMediaSessionActions', e);
+    }
   }
 
   function setMediaSessionMeta(title, artist, isPlaying) {
@@ -138,9 +166,13 @@
     // 1) Plugin nativo (background service + notif Android)
     if (msReady && MediaSession) {
       if (!msActionsBound) bindMediaSessionActions();
-      MediaSession.setMetadata(meta).then(function () {
-        return MediaSession.setPlaybackState({ playbackState: isPlaying ? 'playing' : 'paused' });
-      }).catch(function () {});
+      try {
+        MediaSession.setMetadata(meta).then(function () {
+          return MediaSession.setPlaybackState({ playbackState: isPlaying ? 'playing' : 'paused' });
+        }).catch(function (e) { debugError('setMetadata/setPlaybackState', e); });
+      } catch (e) {
+        debugError('setMetadata sync', e);
+      }
     }
 
     // 2) Fallback web (notif mídia Android 13+ via WebView)
@@ -304,7 +336,7 @@
     if (!audio.paused && !forcarPlay) {
       userWantsPlay = false;
       clearReconnect();
-      audio.pause();
+      try { audio.pause(); } catch (e) { debugError('audio.pause', e); }
       setUI('pause');
       return;
     }
@@ -316,10 +348,21 @@
     if (!audio.src || audio.src.indexOf('/stream') === -1) {
       audio.src = STREAM;
     }
-    audio.load();
-    var p = audio.play();
+    try {
+      audio.load();
+    } catch (e) {
+      debugError('audio.load', e);
+    }
+    var p;
+    try {
+      p = audio.play();
+    } catch (e) {
+      debugError('audio.play sync', e);
+      return;
+    }
     if (p && p.catch) {
-      p.catch(function () {
+      p.catch(function (err) {
+        debugError('audio.play promise', err);
         // Autoplay bloqueado OU rede caída → fica em pause e mostra aviso
         userWantsPlay = false;
         setUI('pause');
@@ -353,6 +396,21 @@
   // (Zeno CDN faz swap AutoDJ↔relay, browser sinaliza buffer momentâneo).
   // Reconectar aí causa o loop que fatia o áudio em pedaços.
   audio.addEventListener('error', function () {
+    // CAPTURA O ERRO REAL DO <audio> — overlay mostra tudo (Isaías pediu v5 pra debugar crash)
+    try {
+      var err = audio.error;
+      var codeName = '?';
+      // MediaError.code: 1=ABORTED 2=NETWORK 3=DECODE 4=SRC_NOT_SUPPORTED
+      if (err) {
+        var map = { 1:'ABORTED', 2:'NETWORK', 3:'DECODE', 4:'SRC_NOT_SUPPORTED' };
+        codeName = map[err.code] || ('code=' + err.code);
+        debugLog('audio.error: ' + codeName + ' — ' + (err.message || '(no msg)') + ' | src=' + (audio.src || '(empty)').slice(0, 60) + ' | netState=' + audio.networkState + ' readyState=' + audio.readyState, '#fca5a5');
+      } else {
+        debugLog('audio.error: SEM MediaError (event disparou sem err object?)', '#fca5a5');
+      }
+    } catch (e) {
+      debugError('listener error', e);
+    }
     if (!userWantsPlay) {
       setUI('pause');
       if (state) state.textContent = 'OFFLINE';
