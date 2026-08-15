@@ -1,9 +1,119 @@
-// player.js — Player FULL-WIDTH NO TOPO + Menu hamburger
-// Versão 3.0 — IDs diretos (não classes), sem autoplay, classes state-* no topbar.
+// player.js — Player FULL-WIDTH NO TOPO + Menu hamburger + MediaSession (background audio)
+// Versão 4.0 — IDs diretos (não classes), sem autoplay, classes state-* no topbar.
+//                 + integração @jofr/capacitor-media-session (notif mídia + play/pause + foreground service).
 (function () {
   'use strict';
 
   var STREAM = '/stream';  // AzuraCast self-hosted (migrado do Zeno.fm 06/08/2026)
+
+  /* =======================================================
+     0) MEDIASESSION — notificação nativa + foreground service (background audio)
+     =======================================================
+     No Android APK: plugin @jofr/capacitor-media-session cria MediaSession
+     + foreground service → áudio continua com tela apagada/app minimizado
+     e aparece notificação com play/pause.
+     Em web/PWA: fallback gracioso via navigator.mediaSession (Android 13+).
+     Plugin carregado via UMD em www/vendor/ (sem bundler).
+  */
+  var MediaSession = null;        // proxy do plugin (window.Capacitor.Plugins.MediaSession)
+  var msReady = false;
+  var msActionsBound = false;
+  var webMediaSession = ('mediaSession' in navigator) ? navigator.mediaSession : null;
+
+  function loadMediaSession() {
+    // Plugin nativo (Android APK): registrado por capacitor-core.js + jofr-media-session.js
+    try {
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.MediaSession) {
+        MediaSession = window.Capacitor.Plugins.MediaSession;
+        msReady = true;
+        bindMediaSessionActions();
+      }
+    } catch (e) {
+      console.warn('[MediaSession] plugin nativo ausente, usando fallback web:', (e.message || e).slice(0, 200));
+    }
+
+    // Fallback web (Android WebView 13+, browsers modernos) — funciona mesmo se plugin falhar
+    if (webMediaSession) {
+      // navigator.mediaSessio não tem setActionHandler? Tem sim — web API padrão
+      try {
+        webMediaSession.setActionHandler('play', function () {
+          var audioEl = document.getElementById('lp-audio');
+          if (audioEl) {
+            audioEl.muted = false;
+            if (typeof window.radioPlay === 'function') window.radioPlay();
+            else audioEl.play().catch(function () {});
+          }
+        });
+        webMediaSession.setActionHandler('pause', function () {
+          var audioEl = document.getElementById('lp-audio');
+          if (audioEl) audioEl.pause();
+        });
+        webMediaSession.setActionHandler('stop', function () {
+          var audioEl = document.getElementById('lp-audio');
+          if (audioEl) audioEl.pause();
+        });
+      } catch (e) {
+        console.warn('[MediaSession] web fallback setActionHandler falhou:', (e.message || e).slice(0, 200));
+      }
+    }
+  }
+
+  function bindMediaSessionActions() {
+    if (msActionsBound || !MediaSession) return;
+    msActionsBound = true;
+    var audioEl = document.getElementById('lp-audio');
+    if (!audioEl) return;
+    // play da notificação → toca o <audio>
+    MediaSession.setActionHandler({ action: 'play' }, function () {
+      audioEl.muted = false;
+      if (typeof window.radioPlay === 'function') window.radioPlay();
+    }).catch(function () {});
+    // pause da notificação → pausa o <audio>
+    MediaSession.setActionHandler({ action: 'pause' }, function () {
+      audioEl.pause();
+    }).catch(function () {});
+    // stop (algumas skins Android usam) → pausa
+    MediaSession.setActionHandler({ action: 'stop' }, function () {
+      audioEl.pause();
+    }).catch(function () {});
+  }
+
+  function setMediaSessionMeta(title, artist, isPlaying) {
+    var meta = {
+      title: title || 'Rádio Devocional 12',
+      artist: artist || 'Ao vivo 24h',
+      album: 'Devocional 12',
+      artwork: [
+        // artwork do PWA via Capacitor (resolve arquivos locais pro src:// interno)
+        // se a URL falhar, o Android ainda mostra a notificação com title/artist
+        { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' }
+      ]
+    };
+
+    // 1) Plugin nativo (background service + notif Android)
+    if (msReady && MediaSession) {
+      if (!msActionsBound) bindMediaSessionActions();
+      MediaSession.setMetadata(meta).then(function () {
+        return MediaSession.setPlaybackState({ playbackState: isPlaying ? 'playing' : 'paused' });
+      }).catch(function () {});
+    }
+
+    // 2) Fallback web (notif mídia Android 13+ via WebView)
+    if (webMediaSession) {
+      try {
+        if (typeof MediaMetadata === 'function') {
+          webMediaSession.metadata = new MediaMetadata({
+            title: meta.title, artist: meta.artist, album: meta.album,
+            artwork: meta.artwork
+          });
+        }
+        webMediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
 
   /* =======================================================
      1) MENU HAMBURGER — drawer lateral
@@ -180,10 +290,14 @@
     reconnectAttempts = 0;
     clearReconnect();
     if (userWantsPlay) setUI('play');
+    // atualiza notificação de mídia (background audio no Android)
+    setMediaSessionMeta('Rádio Devocional 12', 'Ao vivo 24h', true);
   });
   audio.addEventListener('pause', function () {
     if (!userWantsPlay) setUI('pause');
     // não troca UI quando usuário quer play mas rede mid-flight pausa brevemente
+    // mas SEMPRE reflete na notificação de mídia
+    setMediaSessionMeta('Rádio Devocional 12', 'Ao vivo 24h', false);
   });
   audio.addEventListener('waiting', function () {
     // Buffering legítimo — mostra CONECTANDO mas NÃO reconecta
@@ -252,4 +366,8 @@
     if (icoMute) icoMute.hidden = true;
     togglePlay(true);
   };
+
+  // Carrega plugin de MediaSession (lazy — só roda em APK Android nativo).
+  // No web/PWA: no-op silencioso. Em APK: registra handlers + metadata.
+  loadMediaSession();
 })();
