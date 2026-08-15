@@ -37,29 +37,17 @@ jobs:
 
       - name: Replace Android launcher icons with Cruz Dourada
         run: |
-          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            case $d in
-              mdpi)    size=48 ;;
-              hdpi)    size=72 ;;
-              xhdpi)   size=96 ;;
-              xxhdpi)  size=144 ;;
-              xxxhdpi) size=192 ;;
-            esac
-            convert www/icons/app-icon-source.png \
-              -resize ${size}x${size}^ \
-              -gravity center -extent ${size}x${size} \
-              android/app/src/main/res/mipmap-${d}/ic_launcher.png
-            convert www/icons/app-icon-source.png \
-              -resize ${size}x${size}^ \
-              -gravity center -extent ${size}x${size} \
-              android/app/src/main/res/mipmap-${d}/ic_launcher_round.png 2>/dev/null || true
-            convert www/icons/app-icon-source.png \
-              -resize ${size}x${size}^ \
-              -gravity center -extent ${size}x${size} \
-              android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.png 2>/dev/null || true
-          done
-          echo "Icones Android atualizados"
-          ls android/app/src/main/res/mipmap-xxxhdpi/
+          cp android-icons-tmp/mipmap-mdpi/ic_launcher.png     android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp android-icons-tmp/mipmap-mdpi/ic_launcher_round.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp android-icons-tmp/mipmap-hdpi/ic_launcher.png     android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp android-icons-tmp/mipmap-hdpi/ic_launcher_round.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp android-icons-tmp/mipmap-xhdpi/ic_launcher.png    android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp android-icons-tmp/mipmap-xhdpi/ic_launcher_round.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp android-icons-tmp/mipmap-xxhdpi/ic_launcher.png   android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp android-icons-tmp/mipmap-xxhdpi/ic_launcher_round.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp android-icons-tmp/mipmap-xxxhdpi/ic_launcher.png  android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          cp android-icons-tmp/mipmap-xxxhdpi/ic_launcher_round.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          echo "Icones Android Cruz Dourada instalados"
 
       - name: Capacitor sync
         run: npx cap sync android
