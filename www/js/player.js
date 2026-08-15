@@ -20,15 +20,59 @@
   var msActionsBound = false;
   var webMediaSession = ('mediaSession' in navigator) ? navigator.mediaSession : null;
 
+  /* =======================================================
+     DEBUG OVERLAY — diagnóstico visível no app (15/08/2026 v2 debug)
+     Mostra status do plugin + bridge nativo no canto superior direito.
+     Aparece por cima de tudo, semi-transparente.
+     ======================================================= */
+  var debugLines = [];
+  function debugLog(msg, color) {
+    debugLines.push((color || '#fbbf24') + '|' + msg);
+    if (debugLines.length > 6) debugLines.shift();
+    renderDebug();
+    try { console.log('[MS-debug]', msg); } catch(e){}
+  }
+  function renderDebug() {
+    var el = document.getElementById('ms-debug-overlay');
+    if (!el) return;
+    el.innerHTML = debugLines.map(function (l) {
+      var p = l.split('|');
+      return '<div style="color:' + p[0] + '">' + p.slice(1).join('|') + '</div>';
+    }).join('');
+  }
+  function createDebugOverlay() {
+    if (document.getElementById('ms-debug-overlay')) return;
+    var el = document.createElement('div');
+    el.id = 'ms-debug-overlay';
+    el.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;background:rgba(0,0,0,.82);color:#fff;font:11px/1.35 monospace;padding:7px 10px;border-radius:6px;max-width:300px;pointer-events:none;border:1px solid #fbbf24;white-space:pre-wrap';
+    el.innerHTML = '<div style="color:#fbbf24">MS-debug init...</div>';
+    document.body.appendChild(el);
+  }
+
   function loadMediaSession() {
+    createDebugOverlay();
+
+    var cap = window.Capacitor;
+    var capNative = !!(cap && cap.isNative);
+    var capPlatform = cap && cap.getPlatform ? cap.getPlatform() : 'n/a';
+    var pluginProxy = cap && cap.Plugins ? cap.Plugins.MediaSession : null;
+    var hasWebMS = !!webMediaSession;
+
+    debugLog('Cap=' + typeof cap + ' native=' + capNative + ' plat=' + capPlatform);
+    debugLog('Plugin=' + (pluginProxy ? 'OK' : 'AUSENTE') + ' WebMS=' + (hasWebMS ? 'OK' : 'NO'));
+
     // Plugin nativo (Android APK): registrado por capacitor-core.js + jofr-media-session.js
     try {
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.MediaSession) {
-        MediaSession = window.Capacitor.Plugins.MediaSession;
+      if (pluginProxy) {
+        MediaSession = pluginProxy;
         msReady = true;
         bindMediaSessionActions();
+        debugLog('plugin nativo bound ✓', '#86efac');
+      } else {
+        debugLog('plugin nativo AUSENTE — bridge não injetado?', '#fca5a5');
       }
     } catch (e) {
+      debugLog('plugin nativo erro: ' + (e.message || e).slice(0, 80), '#fca5a5');
       console.warn('[MediaSession] plugin nativo ausente, usando fallback web:', (e.message || e).slice(0, 200));
     }
 
@@ -292,6 +336,7 @@
     if (userWantsPlay) setUI('play');
     // atualiza notificação de mídia (background audio no Android)
     setMediaSessionMeta('Rádio Devocional 12', 'Ao vivo 24h', true);
+    debugLog('audio playing → ms meta + state', '#86efac');
   });
   audio.addEventListener('pause', function () {
     if (!userWantsPlay) setUI('pause');
@@ -370,4 +415,9 @@
   // Carrega plugin de MediaSession (lazy — só roda em APK Android nativo).
   // No web/PWA: no-op silencioso. Em APK: registra handlers + metadata.
   loadMediaSession();
+
+  // Log de visibilidade (background/foreground) — ajuda a diagnosticar
+  document.addEventListener('visibilitychange', function () {
+    debugLog('vis=' + document.visibilityState + ' paused=' + audio.paused, document.visibilityState === 'visible' ? '#86efac' : '#fca5a5');
+  });
 })();
